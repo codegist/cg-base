@@ -1,0 +1,30 @@
+<link href="../polymer/polymer.html" rel="import">
+
+<polymer-element name="cg-base" attributes="datarequest defaultparams firerequest">
+<script>
+  Polymer({
+      firerequest:true,
+      datarequest:null,
+      defaultparams:null,
+      fireDataRequest:function(type, params, callback){
+          if(!this.firerequest) {
+              console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+") cancelling request as currently set to disabled.");
+              return;
+          }
+          type = this.datarequest ? this.datarequest + "-" + type : type;
+          params = Polymer.mixin({}, params, this.defaultparams)
+          console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+")");
+          this.fire("data-request", {
+              type:type,
+              params:params,
+              source:this,
+              callback:callback || this.onDataReady
+          }, document);
+      },
+      onDataReady:function(e){
+          console.log("DataReady: " + e);
+      },
+  });
+
+</script>
+</polymer-element>

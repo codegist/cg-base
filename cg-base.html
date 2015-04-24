@@ -7,7 +7,7 @@
       defaultparams:null,
       fireDataRequest:function(type, params, callback){
           type = this.datarequest ? this.datarequest + "-" + type : type;
-          params = Polymer.mixin({}, params, this.defaultparams)
+          params = Polymer.mixin({}, params || {}, this.defaultparams)
           console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+")");
           this.fire("data-request", {
               type:type,

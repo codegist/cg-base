@@ -1,13 +1,13 @@
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="cg-base" attributes="datarequest defaultparams">
+<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams">
 <script>
   Polymer({
-      datarequest:null,
-      defaultparams:null,
-      fireDataRequest:function(type, params, callback){
-          type = this.datarequest ? this.datarequest + "-" + type : type;
-          params = Polymer.mixin({}, params || {}, this.defaultparams)
+      dataTagPrefix:null,
+      dataBaseParams:null,
+      fireDataRequest:function(type, callback, params){
+          type = this.dataTagPrefix ? this.dataTagPrefix + "-" + type : type;
+          params = Polymer.mixin({}, params || {}, this.dataBaseParams)
           console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+")");
           this.fire("data-request", {
               type:type,
@@ -15,6 +15,16 @@
               source:this,
               callback:callback || this.onDataReady
           }, document);
+      },
+      isDataAware:function(){
+          return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
+                  || (this.dataBaseParams !== undefined && this.dataBaseParams !== null);
+      },
+      dataBaseParamsChanged:function(){
+          this.onRefreshData();
+      },
+      onRefreshData:function(){
+
       },
       onDataReady:function(e){
           console.log("DataReady: " + e);

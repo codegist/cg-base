@@ -11,7 +11,7 @@
           }.bind(this));
       },
       fireApplicationEvent:function(type, params){
-          console.log("[cg-base] fireApplicationEvent(type:"+type+", params:"+JSON.stringify(params)+")");
+          console.log("[cg-base] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
           this.asyncFire("cg-application-event", {
               type:type,
               params:params,
@@ -21,7 +21,7 @@
       fireDataRequest:function(type, callback, params){
           type = this.dataTagPrefix ? this.dataTagPrefix + "-" + type : type;
           params = Polymer.mixin({}, params || {}, this.dataBaseParams)
-          console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+")");
+          console.log("[cg-base] fireDataRequest(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
           this.asyncFire("data-request", {
               type:type,
               params:params,

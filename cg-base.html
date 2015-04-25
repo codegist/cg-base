@@ -5,11 +5,24 @@
   Polymer({
       dataTagPrefix:null,
       dataBaseParams:null,
+      created:function(){
+          Polymer.addEventListener(document, "cg-application-event", function(e){
+              this.onApplicationEvent(event.detail.type, event.detail, e);
+          }.bind(this));
+      },
+      fireApplicationEvent:function(type, params){
+          console.log("[cg-base] fireApplicationEvent(type:"+type+", params:"+JSON.stringify(params)+")");
+          this.asyncFire("cg-application-event", {
+              type:type,
+              params:params,
+              source:this
+          }, document);
+      },
       fireDataRequest:function(type, callback, params){
           type = this.dataTagPrefix ? this.dataTagPrefix + "-" + type : type;
           params = Polymer.mixin({}, params || {}, this.dataBaseParams)
           console.log("[cg-base] fireDataRequest(type:"+type+", params:"+JSON.stringify(params)+")");
-          this.fire("data-request", {
+          this.asyncFire("data-request", {
               type:type,
               params:params,
               source:this,
@@ -29,6 +42,9 @@
       onDataReady:function(e){
           console.log("DataReady: " + e);
       },
+      onApplicationEvent:function(type, event, e){
+
+      }
   });
 
 </script>

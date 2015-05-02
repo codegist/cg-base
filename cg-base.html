@@ -6,28 +6,34 @@
       dataTagPrefix:null,
       dataBaseParams:null,
       created:function(){
+          Polymer.addEventListener(document, "cg-application-error", function(e){
+              this.onApplicationError(event.detail.type, event.detail, e);
+          }.bind(this));
           Polymer.addEventListener(document, "cg-application-event", function(e){
               this.onApplicationEvent(event.detail.type, event.detail, e);
           }.bind(this));
       },
-      fireApplicationEvent:function(type, params){
+      fireApplicationError:function(type, params, source){
+          this.asyncFire("cg-application-error", {
+              type:type,
+              params:params,
+              source:source || this
+          }, document);
+      },
+      fireApplicationEvent:function(type, params, source){
           console.log("[cg-base] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
           this.asyncFire("cg-application-event", {
               type:type,
               params:params,
-              source:this
+              source:source || this
           }, document);
       },
-      fireDataRequest:function(type, callback, params){
-          type = this.dataTagPrefix ? this.dataTagPrefix + "-" + type : type;
-          params = Polymer.mixin({}, params || {}, this.dataBaseParams)
-          console.log("[cg-base] fireDataRequest(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
-          this.asyncFire("data-request", {
-              type:type,
-              params:params,
-              source:this,
-              callback:callback || this.onDataReady
-          }, document);
+      fireDataRequest:function(options){
+          options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
+          options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
+          options.source = options.source || this;
+          console.log("[cg-base] fireDataRequest(type:"+options.type+", params:"+String(JSON.stringify(options.params)).substr(0, 40)+")");
+          this.asyncFire("cg-data-request", options, document);
       },
       isDataAware:function(){
           return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
@@ -37,13 +43,10 @@
           this.onRefreshData();
       },
       onRefreshData:function(){
-
-      },
-      onDataReady:function(e){
-          console.log("DataReady: " + e);
       },
       onApplicationEvent:function(type, event, e){
-
+      },
+      onApplicationError:function(type, event, e){
       }
   });
 

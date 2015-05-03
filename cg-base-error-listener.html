@@ -1,18 +1,23 @@
 <link href="../polymer/polymer.html" rel="import">
 <link href="cg-base.html" rel="import">
 
-<polymer-element name="cg-base-error-listener" extends="cg-base" attributes="heading typeFilter genericText detailsLabel closeLabel">
+<polymer-element name="cg-base-error-listener" extends="cg-base" attributes="heading typeFilter genericText detailsLabel closeLabel catchGlobal">
 <template>
 
 </template>
 <script>
   Polymer('cg-base-error-listener', {
       errors:null,
+      catchGlobal:true,
       typeFilter:null,
       created:function(){
           this.super();
           this.errors = [];
           this.typeFilter = [];
+          window.onerror = function(errorMsg, url, lineNumber) {
+              if (!this.catchGlobal) return;
+              return this.fireApplicationError("unknown-error", {error:errorMsg, url:url, lineNumber:lineNumber});
+          }.bind(this);
       },
       _stripSource : function(k,v){
           return k == "source" ? "source":v;

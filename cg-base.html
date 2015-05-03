@@ -21,7 +21,7 @@
           }, document);
       },
       fireApplicationEvent:function(type, params, source){
-          console.log("[cg-base] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
+          console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
           this.asyncFire("cg-application-event", {
               type:type,
               params:params,
@@ -32,7 +32,7 @@
           options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
           options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
           options.source = options.source || this;
-          console.log("[cg-base] fireDataRequest(type:"+options.type+", params:"+String(JSON.stringify(options.params)).substr(0, 40)+")");
+          console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+String(JSON.stringify(options.params)).substr(0, 40)+")");
           this.asyncFire("cg-data-request", options, document);
       },
       isDataAware:function(){

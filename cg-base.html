@@ -1,0 +1,56 @@
+<link href="../polymer/polymer.html" rel="import">
+
+<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams">
+<script>
+  Polymer({
+      dataTagPrefix:null,
+      dataBaseParams:null,
+      created:function(){
+          Polymer.addEventListener(document, "cg-application-error", function(e){
+              console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
+              this.onApplicationError(event.detail.type, event.detail, e);
+          }.bind(this));
+          Polymer.addEventListener(document, "cg-application-event", function(e){
+              console.log("["+this.constructor.name+"] receiving cg-application-event[type:"+event.detail.type+"]");
+              this.onApplicationEvent(event.detail.type, event.detail, e);
+          }.bind(this));
+      },
+      fireApplicationError:function(type, params, source){
+          this.asyncFire("cg-application-error", {
+              type:type,
+              params:params,
+              source:source || this
+          }, document);
+      },
+      fireApplicationEvent:function(type, params, source){
+          console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
+          this.asyncFire("cg-application-event", {
+              type:type,
+              params:params,
+              source:source || this
+          }, document);
+      },
+      fireDataRequest:function(options){
+          options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
+          options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
+          options.source = options.source || this;
+          console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+String(JSON.stringify(options.params)).substr(0, 40)+")");
+          this.asyncFire("cg-data-request", options, document);
+      },
+      isDataAware:function(){
+          return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
+                  || (this.dataBaseParams !== undefined && this.dataBaseParams !== null);
+      },
+      dataBaseParamsChanged:function(){
+          this.onRefreshData();
+      },
+      onRefreshData:function(){
+      },
+      onApplicationEvent:function(type, event, e){
+      },
+      onApplicationError:function(type, event, e){
+      }
+  });
+
+</script>
+</polymer-element>

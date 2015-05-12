@@ -7,6 +7,7 @@
       dataBaseParams:null,
       ownerId:null,
       elementVisible:false,
+      visibleCallback:null,
       created:function(){
           Polymer.addEventListener(document, "cg-application-error", function(e){
               console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
@@ -76,9 +77,24 @@
       },
       onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
           console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
+          this.runVisibleCallbackIfNecessary();
       },
       onApplicationEvent:function(type, event, e){},
-      onApplicationError:function(type, event, e){}
+      onApplicationError:function(type, event, e){},
+      doIfVisible:function(callback){
+          if(this.elementVisible) {
+              callback.call(this);
+          }else{
+              this.visibleCallback = callback;
+          }
+      },
+      runVisibleCallbackIfNecessary:function(){
+          if(this.elementVisible && this.visibleCallback) {
+              console.log("["+this.constructor.name+"] Element is visible and has pending visible callback, executing");
+              this.visibleCallback.call(this);
+              this.visibleCallback = null;
+          }
+      }
   });
 
 </script>

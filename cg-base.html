@@ -1,10 +1,12 @@
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams">
+<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId">
 <script>
   Polymer({
       dataTagPrefix:null,
       dataBaseParams:null,
+      ownerId:null,
+      elementVisible:false,
       created:function(){
           Polymer.addEventListener(document, "cg-application-error", function(e){
               console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
@@ -12,8 +14,21 @@
           }.bind(this));
           Polymer.addEventListener(document, "cg-application-event", function(e){
               console.log("["+this.constructor.name+"] receiving cg-application-event[type:"+event.detail.type+"]");
-              this.onApplicationEvent(event.detail.type, event.detail, e);
+              this._onApplicationEvent(event.detail.type, event.detail, e);
           }.bind(this));
+      },
+      domReady:function(){
+          if(this.ownerId == null) {
+
+              var node = this;
+              do{
+                node = node.hasOwnProperty("host") ? node.host : node.parentNode;
+              }while(node && !node.ownerId);
+              if(node) {
+                  this.ownerId = node.ownerId;
+                  console.log("["+this.constructor.name+"] Found owner id: " + this.ownerId);
+              }
+          }
       },
       fireApplicationError:function(type, params, source){
           this.asyncFire("cg-application-error", {
@@ -23,7 +38,7 @@
           }, document);
       },
       fireApplicationEvent:function(type, params, source){
-          console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+String(JSON.stringify(params)).substr(0, 40)+")");
+          console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
           this.asyncFire("cg-application-event", {
               type:type,
               params:params,
@@ -34,7 +49,7 @@
           options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
           options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
           options.source = options.source || this;
-          console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+String(JSON.stringify(options.params)).substr(0, 40)+")");
+          console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
           this.asyncFire("cg-data-request", options, document);
       },
       isDataAware:function(){
@@ -46,10 +61,24 @@
       },
       onRefreshData:function(){
       },
-      onApplicationEvent:function(type, event, e){
+      _onApplicationEvent:function(type, event, e){
+          switch(type) {
+              case "owner-visibility-changed":
+                  if(this.ownerId == event.params.ownerId) {
+                      this.elementVisible = event.params.visible;
+                      this.onOwnerVisibilityChanged(event.params.visible, event.params.ownerId, event.params.owner, event, e);
+                  }
+                  break;
+              default:
+                  this.onApplicationEvent(type, event, e);
+                  break;
+          }
       },
-      onApplicationError:function(type, event, e){
-      }
+      onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
+          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
+      },
+      onApplicationEvent:function(type, event, e){},
+      onApplicationError:function(type, event, e){}
   });
 
 </script>

@@ -20,7 +20,6 @@
       },
       domReady:function(){
           if(this.ownerId == null) {
-
               var node = this;
               do{
                 node = node.hasOwnProperty("host") ? node.host : node.parentNode;
@@ -66,7 +65,6 @@
           switch(type) {
               case "owner-visibility-changed":
                   if(this.ownerId == event.params.ownerId) {
-                      this.elementVisible = event.params.visible;
                       this.onOwnerVisibilityChanged(event.params.visible, event.params.ownerId, event.params.owner, event, e);
                   }
                   break;
@@ -76,8 +74,8 @@
           }
       },
       onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
-          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
-          this.runVisibleCallbackIfNecessary();
+//          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
+          this.updateVisibility(event.params.visible);
       },
       onApplicationEvent:function(type, event, e){},
       onApplicationError:function(type, event, e){},
@@ -88,7 +86,8 @@
               this.visibleCallback = callback;
           }
       },
-      runVisibleCallbackIfNecessary:function(){
+      updateVisibility:function(visible){
+          this.elementVisible = visible;
           if(this.elementVisible && this.visibleCallback) {
               console.log("["+this.constructor.name+"] Element is visible and has pending visible callback, executing");
               this.visibleCallback.call(this);

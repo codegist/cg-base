@@ -1,0 +1,60 @@
+<link href="../polymer/polymer.html" rel="import">
+<link href="cg-base.html" rel="import">
+
+<polymer-element name="cg-app-globals" attributes="context" extends="cg-base">
+    <template>
+        <shadow></shadow>
+        <content></content>
+    </template>
+    <script>
+        (function() {
+            var values = {};
+
+            Polymer({
+                context:null,
+                ready: function() {
+                    this.values = values;
+                    for (var i = 0; i < this.attributes.length; ++i) {
+                        var attr = this.attributes[i];
+                        values[attr.nodeName] = attr.value;
+                    }
+                    var elements = [].slice.call(this.querySelectorAll("*"));
+                    for(var i = 0;i < elements.length; i++){
+                        var id = elements[i].getAttribute("id") || elements[i].constructor.name;
+                        values[id] = elements[i];
+                    }
+                    values["context"] = this.context || values["context"];
+                },
+                _fireValueChanged:function(name, value, change){
+                    this.fireApplicationEvent(name + "-changed", {
+                        name:name,
+                        value:value,
+                        change:change
+                    });
+                },
+                set:function(name, value){
+                    var exists = this.values.hasOwnProperty(name);
+                    if(typeof value === "function") {
+                        if(exists) {
+                            value(this.values[name]);
+                        }else{
+                            throw name + " not found";
+                        }
+                    }else{
+                        this.values[name] = value;
+                    }
+                    this._fireValueChanged(name, this.values[name], exists ? "modified" : "added");
+                },
+                remove:function(name){
+                    var val = this.values[name];
+                    delete this.values[name];
+                    this._fireValueChanged(name, value, "removed");
+                    return val;
+                },
+                get:function(name){
+                    return this.values[name];
+                }
+            });
+        })();
+    </script>
+</polymer-element>

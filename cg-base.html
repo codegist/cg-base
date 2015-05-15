@@ -2,99 +2,177 @@
 
 <polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId">
 <script>
-  Polymer({
-      dataTagPrefix:null,
-      dataBaseParams:null,
-      ownerId:null,
-      elementVisible:false,
-      visibleCallback:null,
-      created:function(){
-          Polymer.addEventListener(document, "cg-application-error", function(e){
-              console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
-              this.onApplicationError(event.detail.type, event.detail, e);
-          }.bind(this));
-          Polymer.addEventListener(document, "cg-application-event", function(e){
-              console.log("["+this.constructor.name+"] receiving cg-application-event[type:"+event.detail.type+"]");
-              this._onApplicationEvent(event.detail.type, event.detail, e);
-          }.bind(this));
-      },
-      domReady:function(){
-          if(this.ownerId == null) {
-              var node = this;
-              do{
-                node = node.hasOwnProperty("host") ? node.host : node.parentNode;
-              }while(node && !node.ownerId);
-              if(node) {
-                  this.ownerId = node.ownerId;
-                  console.log("["+this.constructor.name+"] Found owner id: " + this.ownerId);
-              }
-          }
-      },
-      fireApplicationError:function(type, params, source){
-          this.asyncFire("cg-application-error", {
-              type:type,
-              params:params,
-              source:source || this
-          }, document);
-      },
-      fireApplicationEvent:function(type, params, source){
-          console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
-          this.asyncFire("cg-application-event", {
-              type:type,
-              params:params,
-              source:source || this
-          }, document);
-      },
-      fireDataRequest:function(options){
-          options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
-          options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
-          options.source = options.source || this;
-          console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
-          this.asyncFire("cg-data-request", options, document);
-      },
-      isDataAware:function(){
-          return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
-                  || (this.dataBaseParams !== undefined && this.dataBaseParams !== null);
-      },
-      dataBaseParamsChanged:function(){
-          this.onRefreshData();
-      },
-      onRefreshData:function(){
-      },
-      _onApplicationEvent:function(type, event, e){
-          switch(type) {
-              case "owner-visibility-changed":
-                  if(this.ownerId == event.params.ownerId) {
-                      this.onOwnerVisibilityChanged(event.params.visible, event.params.ownerId, event.params.owner, event, e);
-                  }
-                  break;
-              default:
-                  this.onApplicationEvent(type, event, e);
-                  break;
-          }
-      },
-      onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
-//          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
-          this.updateVisibility(event.params.visible);
-      },
-      onApplicationEvent:function(type, event, e){},
-      onApplicationError:function(type, event, e){},
-      doIfVisible:function(callback){
-          if(this.elementVisible) {
-              callback.call(this);
-          }else{
-              this.visibleCallback = callback;
-          }
-      },
-      updateVisibility:function(visible){
-          this.elementVisible = visible;
-          if(this.elementVisible && this.visibleCallback) {
-              console.log("["+this.constructor.name+"] Element is visible and has pending visible callback, executing");
-              this.visibleCallback.call(this);
-              this.visibleCallback = null;
-          }
-      }
-  });
+    (function(){
+        var GLOBALS = {
+            context:{
 
+            }
+        };
+
+        Polymer({
+            dataTagPrefix:null,
+            dataBaseParams:null,
+            ownerId:null,
+            elementVisible:false,
+            visibleCallback:null,
+            globals:null,
+            _globalsContextObs:null,
+            created:function(){
+                console.log("["+this.constructor.name+"] Created");
+                this.globals = GLOBALS;
+                this._globalsContextObs = new PathObserver(this.globals, "context");
+                this._globalsContextObs.open(this.contextChanged.bind(this));
+                Polymer.addEventListener(document, "cg-application-error", function(e){
+                    console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
+                    this.onApplicationError(event.detail.type, event.detail, e);
+                }.bind(this));
+                Polymer.addEventListener(document, "cg-application-event", function(e){
+                    console.log("["+this.constructor.name+"] receiving cg-application-event[type:"+event.detail.type+"]");
+                    this._onApplicationEvent(event.detail.type, event.detail, e);
+                }.bind(this));
+//                Polymer.addEventListener(document, "cg-application-global", function(e){
+//                    console.log("["+this.constructor.name+"] receiving cg-application-global[type:"+event.detail.type+"]");
+//                    this.onGlobalEvent(event.detail.type, event.detail, e);
+//                }.bind(this));
+            },
+            domReady:function(){
+                if(this.ownerId == null) {
+                    var node = this;
+                    do{
+                        node = node.hasOwnProperty("host") ? node.host : node.parentNode;
+                    }while(node && !node.ownerId);
+                    if(node) {
+                        this.ownerId = node.ownerId;
+                        console.log("["+this.constructor.name+"] Found owner id: " + this.ownerId);
+                    }
+                }
+                this.async(this.contextChanged);
+            },
+            fireApplicationError:function(type, params, source){
+                this.asyncFire("cg-application-error", {
+                    type:type,
+                    params:params,
+                    source:source || this
+                }, document);
+            },
+            fireApplicationEvent:function(type, params, source){
+                console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
+                this.asyncFire("cg-application-event", {
+                    type:type,
+                    params:params,
+                    source:source || this
+                }, document);
+            },
+//            fireGlobalEvent:function(type, params, source){
+//                console.log("["+this.constructor.name+"] fireGlobalEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
+//                this.asyncFire("cg-application-global", {
+//                    type:type,
+//                    params:params,
+//                    source:source || this
+//                }, document);
+//            },
+            fireDataRequest:function(options){
+                options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
+                options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
+                options.source = options.source || this;
+                console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
+                this.asyncFire("cg-data-request", options, document);
+            },
+            isDataAware:function(){
+                return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
+                        || (this.dataBaseParams !== undefined && this.dataBaseParams !== null);
+            },
+            dataBaseParamsChanged:function(){
+                this.onRefreshData();
+            },
+            onRefreshData:function(){
+            },
+            _onApplicationEvent:function(type, event, e){
+                switch(type) {
+                    case "owner-visibility-changed":
+                        if(this.ownerId == event.params.ownerId) {
+                            this.onOwnerVisibilityChanged(event.params.visible, event.params.ownerId, event.params.owner, event, e);
+                        }
+                        break;
+                    default:
+                        this.onApplicationEvent(type, event, e);
+                        break;
+                }
+            },
+//            onGlobalEvent:function(type, event, e){
+//                switch(type) {
+//                    case "context-changed":
+//                  this.onRefreshData();
+//                        this.onContextChanged(event.params.value);
+//                        break;
+//                }
+//            },
+            contextChanged:function(){
+                console.log("["+this.constructor.name+"] contextChanged()");
+            },
+            globalsChanged:function(){
+                console.log("["+this.constructor.name+"] globalsChanged()");
+            },
+            onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
+//          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
+                this.updateVisibility(event.params.visible);
+            },
+            onApplicationEvent:function(type, event, e){},
+            onApplicationError:function(type, event, e){},
+            doIfVisible:function(callback){
+                if(this.elementVisible) {
+                    callback.call(this);
+                }else{
+                    this.visibleCallback = callback;
+                }
+            },
+            updateVisibility:function(visible){
+                this.elementVisible = visible;
+                if(this.elementVisible && this.visibleCallback) {
+                    console.log("["+this.constructor.name+"] Element is visible and has pending visible callback, executing");
+                    this.visibleCallback.call(this);
+                    this.visibleCallback = null;
+                }
+            },
+
+
+//            _fireGlobalChanged:function(name, value, change){
+//                this.fireGlobalEvent(name + "-changed", {
+//                    name:name,
+//                    value:value,
+//                    change:change
+//                });
+//            },
+            setGlobal:function(name, value){
+                if(!value) {
+                    throw "Value for "+name+" global must be given";
+                }
+                var exists = GLOBALS.hasOwnProperty(name);
+                if(typeof value === "function") {
+                    if(exists) {
+                        value.call(this, GLOBALS[name]);
+                    }else{
+                        throw name + " not found";
+                    }
+                }else{
+                    GLOBALS[name] = value;
+                }
+//                this._fireGlobalChanged(name, GLOBALS[name], exists ? "modified" : "added");
+                return GLOBALS[name];
+            },
+            removeGlobal:function(name){
+                var val = GLOBALS[name];
+                delete GLOBALS[name];
+//                this._fireGlobalChanged(name, value, "removed");
+                return val;
+            },
+            getGlobal:function(name){
+                return GLOBALS[name];
+            },
+//            context:function(modifierFn){
+//                return modifierFn ? this.setGlobal("context", modifierFn) : GLOBALS.context;
+//            },
+        });
+    })();
 </script>
 </polymer-element>

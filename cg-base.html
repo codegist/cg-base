@@ -171,7 +171,7 @@
             listenOnce: function(event, fn, args) {
                 var self = this;
                 var listener = function() {
-                    fn.apply(self, args || arguments);
+                    fn.apply(self, arguments.concat(args));
                     this.removeEventListener(event, listener, false);
                 };
                 this.addEventListener(event, listener, false);

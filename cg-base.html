@@ -1,15 +1,22 @@
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId">
+<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId listensTo">
 <script>
     (function(){
         var GLOBALS = {
             context:{
-
             }
         };
 
         Polymer({
+            listensTo:["cg-application-event"],
+            _handlerMap:{
+                "cg-application-event" : "_onApplicationEvent",
+                "cg-application-error" : "onApplicationError",
+                "cg-application-link" : "onApplicationLink"
+            },
+            self:null,
+            _eventsHandlers:{},
             dataTagPrefix:null,
             dataBaseParams:null,
             ownerId:null,
@@ -18,22 +25,38 @@
             globals:null,
             _globalsContextObs:null,
             created:function(){
+                this.self = this;
                 console.log("["+this.constructor.name+"] Created");
                 this.globals = GLOBALS;
                 this._globalsContextObs = new PathObserver(this.globals, "context");
                 this._globalsContextObs.open(this.contextChanged.bind(this));
-                Polymer.addEventListener(document, "cg-application-error", function(e){
-                    console.log("["+this.constructor.name+"] receiving cg-application-error[type:"+event.detail.type+"]");
-                    this.onApplicationError(event.detail.type, event.detail, e);
-                }.bind(this));
-                Polymer.addEventListener(document, "cg-application-event", function(e){
-                    console.log("["+this.constructor.name+"] receiving cg-application-event[type:"+event.detail.type+"]");
-                    this._onApplicationEvent(event.detail.type, event.detail, e);
-                }.bind(this));
-//                Polymer.addEventListener(document, "cg-application-global", function(e){
-//                    console.log("["+this.constructor.name+"] receiving cg-application-global[type:"+event.detail.type+"]");
-//                    this.onGlobalEvent(event.detail.type, event.detail, e);
-//                }.bind(this));
+                this.listensToChanged();
+            },
+            listensToChanged:function(){
+                for(var key in this._eventsHandlers){
+                    var e = this._eventsHandlers[key];
+                    Polymer.removeEventListener(e.node, e.event, e.handler);
+                }
+                this._eventsHandlers = {};
+                for(var i = 0; i < this.listensTo.length; i++){
+                    if(!this._handlerMap.hasOwnProperty(this.listensTo[i])) {
+                        throw "unknown handler " + this.listensTo[i];
+                    }
+                    var handler = this[this._handlerMap[this.listensTo[i]]];
+                    this._listensTo(this.listensTo[i], handler);
+                }
+            },
+            _listensTo:function(event, callback){
+                var handler = function(e){
+                    console.log("["+this.constructor.name+"] receiving "+event+"[type:"+e.detail.type+"]");
+                    callback.call(this, e.detail.type, e.detail, e);
+                }.bind(this);
+                Polymer.addEventListener(document, event, handler);
+                this._eventsHandlers[event] = {
+                    handler:handler,
+                    event:event,
+                    node:document
+                };
             },
             domReady:function(){
                 if(this.ownerId == null) {
@@ -48,29 +71,23 @@
                 }
                 this.async(this.contextChanged);
             },
+            fireApplicationLink:function(type, params, source){
+                this._fireApplication("cg-application-link", type, params, source);
+            },
             fireApplicationError:function(type, params, source){
-                this.asyncFire("cg-application-error", {
-                    type:type,
-                    params:params,
-                    source:source || this
-                }, document);
+                this._fireApplication("cg-application-error", type, params, source);
             },
             fireApplicationEvent:function(type, params, source){
-                console.log("["+this.constructor.name+"] fireApplicationEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
-                this.asyncFire("cg-application-event", {
+                this._fireApplication("cg-application-event", type, params, source);
+            },
+            _fireApplication:function(eventType, type, params, source){
+                console.log("["+this.constructor.name+"] fireApplication(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
+                this.asyncFire(eventType, {
                     type:type,
                     params:params,
                     source:source || this
                 }, document);
             },
-//            fireGlobalEvent:function(type, params, source){
-//                console.log("["+this.constructor.name+"] fireGlobalEvent(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
-//                this.asyncFire("cg-application-global", {
-//                    type:type,
-//                    params:params,
-//                    source:source || this
-//                }, document);
-//            },
             fireDataRequest:function(options){
                 options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
                 options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
@@ -99,14 +116,6 @@
                         break;
                 }
             },
-//            onGlobalEvent:function(type, event, e){
-//                switch(type) {
-//                    case "context-changed":
-//                  this.onRefreshData();
-//                        this.onContextChanged(event.params.value);
-//                        break;
-//                }
-//            },
             contextChanged:function(){
                 console.log("["+this.constructor.name+"] contextChanged()");
             },
@@ -114,9 +123,9 @@
                 console.log("["+this.constructor.name+"] globalsChanged()");
             },
             onOwnerVisibilityChanged:function(visible, ownerId, owner, event, e){
-//          console.log("["+this.constructor.name+"] onOwnerVisibilityChanged(visible:"+visible+", ownerId:"+ownerId+")");
                 this.updateVisibility(event.params.visible);
             },
+            onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},
             doIfVisible:function(callback){
@@ -135,14 +144,6 @@
                 }
             },
 
-
-//            _fireGlobalChanged:function(name, value, change){
-//                this.fireGlobalEvent(name + "-changed", {
-//                    name:name,
-//                    value:value,
-//                    change:change
-//                });
-//            },
             setGlobal:function(name, value){
                 if(!value) {
                     throw "Value for "+name+" global must be given";
@@ -157,21 +158,16 @@
                 }else{
                     GLOBALS[name] = value;
                 }
-//                this._fireGlobalChanged(name, GLOBALS[name], exists ? "modified" : "added");
                 return GLOBALS[name];
             },
             removeGlobal:function(name){
                 var val = GLOBALS[name];
                 delete GLOBALS[name];
-//                this._fireGlobalChanged(name, value, "removed");
                 return val;
             },
             getGlobal:function(name){
                 return GLOBALS[name];
             },
-//            context:function(modifierFn){
-//                return modifierFn ? this.setGlobal("context", modifierFn) : GLOBALS.context;
-//            },
         });
     })();
 </script>

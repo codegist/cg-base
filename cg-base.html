@@ -3,11 +3,70 @@
 <polymer-element name="cg-base" attributes="ownerId listensTo cgName dataContext">
 <script>
     (function(){
+        var id = 1;
         var GLOBALS = {
             ignoreVisibilityOnDataRequest:[],
             context:{
             }
         };
+        var RunOnVisible = function(){
+            this.elements = {};
+            this.keys = [];
+            this.interval = null;
+        };
+        RunOnVisible.prototype = {
+            runOrEnqueueIfNotVisible:function(element, callback, scope){
+                if(GLOBALS.ignoreVisibilityOnDataRequest.indexOf(element.constructor.name) != -1 || this._isElementVisible(element)) {
+                    return callback.call(scope);
+                }
+                this.elements[element._cgbaseId] = {
+                    el:element,
+                    callback:callback,
+                    scope:scope
+                };
+                this._elementsChanged();
+            },
+            _elementsChanged:function(){
+                this.keys = Object.keys(this.elements);
+            },
+            start:function(options){
+                this.interval = setInterval(this._check.bind(this), options.pooling || 500);
+                return this;
+            },
+            stop:function(){
+                this.interval && clearInterval(this.interval);
+                return this;
+            },
+            _check:function(){
+                var len = this.keys.length;
+                if(len == 0) {
+                    return;
+                }
+                console.log("[cg-base] VisibilityChecker cycle (contains:" + len + " elements)");
+                var desc, changed = false;
+                for(var i = 0; i < len;i++){
+                    desc = this.elements[this.keys[i]];
+                    if(this._isElementVisible(desc.el)) {
+                        delete this.elements[this.keys[i]];
+                        console.log("[cg-base] VisibilityChecker element " + desc.el.constructor.name + " has been made visible, running callback");
+                        desc.callback.call(desc.scope);
+                        changed = true;
+                    }
+                }
+                if(changed) {
+                    this._elementsChanged();
+                }
+            },
+            _isElementVisible:function(element){
+                return document.defaultView.getComputedStyle(element, null).visibility != "hidden";
+            },
+            remove:function(element){
+                delete this.elements[element._cgbaseId];
+                this._elementsChanged();
+            },
+        };
+
+        var RUN_ON_VISIBLE = new RunOnVisible().start({pooling:100});
 
         Polymer({
             listensTo:["cg-application-event"],
@@ -16,6 +75,7 @@
                 "cg-application-error" : "onApplicationError",
                 "cg-application-link" : "onApplicationLink"
             },
+            _cgbaseId:0,
             cgName:null,
             self:null,
             _eventsHandlers:{},
@@ -24,12 +84,17 @@
             dataContext:null,
             _globalsContextObs:null,
             created:function(){
+                this._cgbaseId = id++;
                 this.self = this;
-                console.log("["+this.constructor.name+"] Created");
+                console.log("["+this.constructor.name+"] Created with id " + this._cgbaseId);
                 this.globals = GLOBALS;
                 this._globalsContextObs = new PathObserver(GLOBALS, "context");
                 this._globalsContextObs.open(function(){this.contextChanged()}.bind(this));
                 this.listensToChanged();
+            },
+            detached:function(){
+                RUN_ON_VISIBLE.remove(this);
+                console.log("["+this.constructor.name+"] detached");
             },
             listensToChanged:function(){
                 for(var key in this._eventsHandlers){
@@ -106,23 +171,7 @@
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},
             doIfVisible:function(callback, scope){
-                if(this.globals.ignoreVisibilityOnDataRequest.indexOf(this.constructor.name) != -1 || this.isVisible()) {
-                    callback.call(scope || this);
-                }else{
-                    this.visibleCallback && clearInterval(this.visibleCallback);
-                    this.visibleCallback = setInterval(function(){
-                        if(this.isVisible()) {
-                            console.log("["+this.constructor.name+"] has become visible, firing callback");
-                            clearInterval(this.visibleCallback);
-                            callback.call(scope || this);
-                        }else{
-                            console.log(this.constructor.name + " visibility pooling")
-                        }
-                    }.bind(this), 500);
-                }
-            },
-            isVisible:function(){
-                return document.defaultView.getComputedStyle(this, null).visibility != "hidden";
+                RUN_ON_VISIBLE.runOrEnqueueIfNotVisible(this, callback, scope || this);
             },
             setGlobal:function(name, value){
                 if(!value) {

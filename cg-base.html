@@ -11,23 +11,19 @@
         };
         var RunOnVisible = function(){
             this.elements = {};
-            this.keys = [];
             this.interval = null;
         };
         RunOnVisible.prototype = {
-            runOrEnqueueIfNotVisible:function(element, callback, scope){
-                if(GLOBALS.ignoreVisibilityOnDataRequest.indexOf(element.constructor.name) != -1 || this._isElementVisible(element)) {
+            runOrEnqueueIfNotVisible:function(element, callback, typ    e, scope){
+                if(GLOBALS.ignoreVisibilityOnDataRequest.indexOf(type || element.constructor.name) != -1 || this._isElementVisible(element)) {
                     return callback.call(scope);
                 }
-                this.elements[element._cgbaseId] = {
+                this.elements[element._cgbaseId] = this.elements[element._cgbaseId] || {};
+                this.elements[element._cgbaseId][type || 'default'] = {
                     el:element,
                     callback:callback,
                     scope:scope
                 };
-                this._elementsChanged();
-            },
-            _elementsChanged:function(){
-                this.keys = Object.keys(this.elements);
             },
             start:function(options){
                 this.interval = setInterval(this._check.bind(this), options.pooling || 500);
@@ -38,23 +34,23 @@
                 return this;
             },
             _check:function(){
-                var len = this.keys.length;
+                var keys = Object.keys(this.elements);
+                var len = keys.length;
                 if(len == 0) {
                     return;
                 }
-                console.log("[cg-base] VisibilityChecker cycle (contains:" + len + " elements)");
-                var desc, changed = false;
-                for(var i = 0; i < len;i++){
-                    desc = this.elements[this.keys[i]];
-                    if(this._isElementVisible(desc.el)) {
-                        delete this.elements[this.keys[i]];
-                        console.log("[cg-base] VisibilityChecker element " + desc.el.constructor.name + " has been made visible, running callback");
-                        desc.callback.call(desc.scope);
-                        changed = true;
+                console.log("[cg-base] VisibilityChecker cycle (contains:" + len + " elements with pending requests)");
+                var desc,types;
+                for(var i = 0; i < len;i++) {
+                    desc = this.elements[keys[i]];
+                    types = Object.keys(desc);
+                    if (this._isElementVisible(desc[types[0]].el)) {
+                        console.log("[cg-base] VisibilityChecker element " + desc[types[0]].el.constructor.name + " has been made visible, running callback");
+                        for (var j = 0; j < types.length; j++) {
+                            desc[types[j]].callback.call(desc[types[j]].scope);
+                        }
+                        delete this.elements[keys[i]];
                     }
-                }
-                if(changed) {
-                    this._elementsChanged();
                 }
             },
             _isElementVisible:function(element){
@@ -62,7 +58,6 @@
             },
             remove:function(element){
                 delete this.elements[element._cgbaseId];
-                this._elementsChanged();
             },
         };
 
@@ -151,7 +146,7 @@
                 // TODO WORK ON THIS
                 this.doIfVisible(function(){ // TODO should be only valid if request is a read one!!!!!
                     this.asyncFire("cg-data-request", options, document);
-                });
+                }, options.type);
             },
             isDataAware:function(){
                 return this.globals.dataAware;
@@ -170,8 +165,8 @@
             onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},
-            doIfVisible:function(callback, scope){
-                RUN_ON_VISIBLE.runOrEnqueueIfNotVisible(this, callback, scope || this);
+            doIfVisible:function(callback, type, scope){
+                RUN_ON_VISIBLE.runOrEnqueueIfNotVisible(this, callback, type, scope || this);
             },
             setGlobal:function(name, value){
                 if(!value) {

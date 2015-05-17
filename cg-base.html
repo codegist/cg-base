@@ -1,6 +1,6 @@
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId listensTo">
+<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId listensTo cgName">
 <script>
     (function(){
         var GLOBALS = {
@@ -15,6 +15,7 @@
                 "cg-application-error" : "onApplicationError",
                 "cg-application-link" : "onApplicationLink"
             },
+            cgName:null,
             self:null,
             _eventsHandlers:{},
             dataTagPrefix:null,
@@ -89,15 +90,15 @@
                 }, document);
             },
             fireDataRequest:function(options){
-                options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
+                options.type = (options.typePrefix !== false ? (this.cgName || this.constructor.name) + "/" : "") + options.type;
+//                options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
                 options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
                 options.source = options.source || this;
                 console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
                 this.asyncFire("cg-data-request", options, document);
             },
             isDataAware:function(){
-                return (this.dataTagPrefix !== undefined && this.dataTagPrefix !== null)
-                        || (this.dataBaseParams !== undefined && this.dataBaseParams !== null);
+                return this.globals.dataAware;
             },
             dataBaseParamsChanged:function(){
                 this.onRefreshData();
@@ -128,9 +129,9 @@
             onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},
-            doIfVisible:function(callback){
+            doIfVisible:function(callback, scope){
                 if(this.elementVisible) {
-                    callback.call(this);
+                    callback.call(scope || this);
                 }else{
                     this.visibleCallback = callback;
                 }
@@ -171,7 +172,7 @@
             listenOnce: function(event, fn, args) {
                 var self = this;
                 var listener = function() {
-                    fn.apply(self, arguments.concat(args));
+                    fn.apply(self, [].slice.call(arguments).concat(args));
                     this.removeEventListener(event, listener, false);
                 };
                 this.addEventListener(event, listener, false);

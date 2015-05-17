@@ -9,59 +9,6 @@
             context:{
             }
         };
-        var RunOnVisible = function(){
-            this.elements = {};
-            this.interval = null;
-        };
-        RunOnVisible.prototype = {
-            runOrEnqueueIfNotVisible:function(element, callback, typ    e, scope){
-                if(GLOBALS.ignoreVisibilityOnDataRequest.indexOf(type || element.constructor.name) != -1 || this._isElementVisible(element)) {
-                    return callback.call(scope);
-                }
-                this.elements[element._cgbaseId] = this.elements[element._cgbaseId] || {};
-                this.elements[element._cgbaseId][type || 'default'] = {
-                    el:element,
-                    callback:callback,
-                    scope:scope
-                };
-            },
-            start:function(options){
-                this.interval = setInterval(this._check.bind(this), options.pooling || 500);
-                return this;
-            },
-            stop:function(){
-                this.interval && clearInterval(this.interval);
-                return this;
-            },
-            _check:function(){
-                var keys = Object.keys(this.elements);
-                var len = keys.length;
-                if(len == 0) {
-                    return;
-                }
-                console.log("[cg-base] VisibilityChecker cycle (contains:" + len + " elements with pending requests)");
-                var desc,types;
-                for(var i = 0; i < len;i++) {
-                    desc = this.elements[keys[i]];
-                    types = Object.keys(desc);
-                    if (this._isElementVisible(desc[types[0]].el)) {
-                        console.log("[cg-base] VisibilityChecker element " + desc[types[0]].el.constructor.name + " has been made visible, running callback");
-                        for (var j = 0; j < types.length; j++) {
-                            desc[types[j]].callback.call(desc[types[j]].scope);
-                        }
-                        delete this.elements[keys[i]];
-                    }
-                }
-            },
-            _isElementVisible:function(element){
-                return document.defaultView.getComputedStyle(element, null).visibility != "hidden";
-            },
-            remove:function(element){
-                delete this.elements[element._cgbaseId];
-            },
-        };
-
-        var RUN_ON_VISIBLE = new RunOnVisible().start({pooling:100});
 
         Polymer({
             listensTo:["cg-application-event"],
@@ -77,6 +24,7 @@
             elementVisible:true,
             globals:null,
             dataContext:null,
+            isAttached:null,
             _globalsContextObs:null,
             created:function(){
                 this._cgbaseId = id++;
@@ -87,8 +35,11 @@
                 this._globalsContextObs.open(function(){this.contextChanged()}.bind(this));
                 this.listensToChanged();
             },
+            attached:function(){
+                this.isAttached = true;
+            },
             detached:function(){
-                RUN_ON_VISIBLE.remove(this);
+                this.isAttached = false;
                 console.log("["+this.constructor.name+"] detached");
             },
             listensToChanged:function(){
@@ -139,14 +90,12 @@
             },
             fireDataRequest:function(options){
                 options.type = (options.typePrefix !== false ? (this.cgName || this.constructor.name) + "/" : "") + options.type;
+                options.el = this;
                 options.source = options.source || this;
                 options.params = options.params || {};
                 options.params.context = this.dataContext || {};
                 console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
-                // TODO WORK ON THIS
-                this.doIfVisible(function(){ // TODO should be only valid if request is a read one!!!!!
-                    this.asyncFire("cg-data-request", options, document);
-                }, options.type);
+                this.asyncFire("cg-data-request", options, document);
             },
             isDataAware:function(){
                 return this.globals.dataAware;
@@ -165,33 +114,7 @@
             onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},
-            doIfVisible:function(callback, type, scope){
-                RUN_ON_VISIBLE.runOrEnqueueIfNotVisible(this, callback, type, scope || this);
-            },
-            setGlobal:function(name, value){
-                if(!value) {
-                    throw "Value for "+name+" global must be given";
-                }
-                var exists = GLOBALS.hasOwnProperty(name);
-                if(typeof value === "function") {
-                    if(exists) {
-                        value.call(this, GLOBALS[name]);
-                    }else{
-                        throw name + " not found";
-                    }
-                }else{
-                    GLOBALS[name] = value;
-                }
-                return GLOBALS[name];
-            },
-            removeGlobal:function(name){
-                var val = GLOBALS[name];
-                delete GLOBALS[name];
-                return val;
-            },
-            getGlobal:function(name){
-                return GLOBALS[name];
-            },
+
             listenOnce: function(event, fn, args) {
                 var self = this;
                 var listener = function() {

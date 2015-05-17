@@ -1,6 +1,6 @@
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="cg-base" attributes="dataTagPrefix dataBaseParams ownerId listensTo cgName">
+<polymer-element name="cg-base" attributes="ownerId listensTo cgName dataContext">
 <script>
     (function(){
         var GLOBALS = {
@@ -18,19 +18,19 @@
             cgName:null,
             self:null,
             _eventsHandlers:{},
-            dataTagPrefix:null,
-            dataBaseParams:null,
             ownerId:null,
-            elementVisible:false,
+            viewPath:null,
+            elementVisible:true,
             visibleCallback:null,
             globals:null,
+            dataContext:null,
             _globalsContextObs:null,
             created:function(){
                 this.self = this;
                 console.log("["+this.constructor.name+"] Created");
                 this.globals = GLOBALS;
-                this._globalsContextObs = new PathObserver(this.globals, "context");
-                this._globalsContextObs.open(this.contextChanged.bind(this));
+                this._globalsContextObs = new PathObserver(GLOBALS, "context");
+                this._globalsContextObs.open(function(){this.contextChanged()}.bind(this));
                 this.listensToChanged();
             },
             listensToChanged:function(){
@@ -70,6 +70,19 @@
                         console.log("["+this.constructor.name+"] Found owner id: " + this.ownerId);
                     }
                 }
+                // TODO WORK ON THIS
+                if(this.viewPath == null) {
+                    var viewPath = [this.cgName || this.constructor.name];
+                    var node = this;
+                    do{
+                        node = node.hasOwnProperty("host") ? node.host : node.parentNode;
+                        if(node && node.cgName) {
+                            viewPath.push(node.cgName);
+                        }
+                    }while(node);
+                    this.viewPath = viewPath.reverse().join('/');
+                    console.log("["+this.constructor.name+"] viewPath: " + this.viewPath);
+                }
                 this.async(this.contextChanged);
             },
             fireApplicationLink:function(type, params, source){
@@ -91,24 +104,23 @@
             },
             fireDataRequest:function(options){
                 options.type = (options.typePrefix !== false ? (this.cgName || this.constructor.name) + "/" : "") + options.type;
-//                options.type = this.dataTagPrefix ? this.dataTagPrefix + "-" + options.type : options.type;
-                options.params = Polymer.mixin({}, options.params || {}, this.dataBaseParams);
                 options.source = options.source || this;
+                options.params = options.params || {};
+                options.params.context = this.dataContext || {};
                 console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
-                this.asyncFire("cg-data-request", options, document);
+                // TODO WORK ON THIS 
+//                this.doIfVisible(function(){
+                    this.asyncFire("cg-data-request", options, document);
+//                });
+
             },
             isDataAware:function(){
                 return this.globals.dataAware;
             },
-            dataBaseParamsChanged:function(){
-                this.onRefreshData();
-            },
-            onRefreshData:function(){
-            },
             _onApplicationEvent:function(type, event, e){
                 switch(type) {
                     case "owner-visibility-changed":
-                        if(this.ownerId == event.params.ownerId) {
+                        if(this.viewPath && this.viewPath.indexOf(event.params.viewPath) == 0) {
                             this.onOwnerVisibilityChanged(event.params.visible, event.params.ownerId, event.params.owner, event, e);
                         }
                         break;
@@ -117,6 +129,11 @@
                         break;
                 }
             },
+            dataContextChanged:function(){
+                console.log("["+this.constructor.name+"] dataContextChanged()");
+                this.reload();
+            },
+            reload:function(){},
             contextChanged:function(){
                 console.log("["+this.constructor.name+"] contextChanged()");
             },
@@ -136,7 +153,9 @@
                     this.visibleCallback = callback;
                 }
             },
+            // TODO WORK ON THIS
             updateVisibility:function(visible){
+                console.log("["+this.constructor.name+"] Element is "+ (!visible ? "not" :"" )+" visible.");
                 this.elementVisible = visible;
                 if(this.elementVisible && this.visibleCallback) {
                     console.log("["+this.constructor.name+"] Element is visible and has pending visible callback, executing");

@@ -36,7 +36,6 @@
             created:function(){
                 this._cgbaseId = id++;
                 this.self = this;
-                console.log("["+this.constructor.name+"] Created with id " + this._cgbaseId);
                 this.globals = GLOBALS;
                 this._globalsContextObs = new PathObserver(GLOBALS, "context");
                 this._globalsContextObs.open(function(){this.contextChanged()}.bind(this));
@@ -111,15 +110,12 @@
                 return this.globals.dataAware;
             },
             dataContextChanged:function(){
-                console.log("["+this.constructor.name+"] dataContextChanged()");
                 this.reload();
             },
             reload:function(){},
             contextChanged:function(){
-                console.log("["+this.constructor.name+"] contextChanged()");
             },
             globalsChanged:function(){
-                console.log("["+this.constructor.name+"] globalsChanged()");
             },
             onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},

@@ -1,6 +1,13 @@
 <link href="../polymer/polymer.html" rel="import">
+<link href="loading-overlay.html" rel="import">
 
 <polymer-element name="cg-base" attributes="ownerId listensTo cgName dataContext">
+
+    <!--/*:host .disabled.core-transition.core-opened {*/-->
+    <!--/*background-color: black;*/-->
+    <!--/*opacity:0.6;*/-->
+    <!--/*}*/-->
+    <!--<core-overlay class="disabled" fit opened="true" autoCloseDisabled="true" sizingTarget="{{$.search}}"></core-overlay>-->
 <script>
     (function(){
         var id = 1;
@@ -89,6 +96,9 @@
                 }, document);
             },
             fireDataRequest:function(options){
+//                var loading = document.createElement("loading-overlay");
+//                loading.setAttribute("sizingTarget", "{{self}}");
+//                this.appendChild(loading);
                 options.type = (options.typePrefix !== false ? (this.cgName || this.constructor.name) + "/" : "") + options.type;
                 options.el = this;
                 options.source = options.source || this;

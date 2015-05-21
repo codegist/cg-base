@@ -103,7 +103,7 @@
                 options.source = options.source || this;
                 options.params = options.params || {};
                 options.params.context = this.dataContext || {};
-                console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 40)+")");
+                console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 100)+")");
                 this.asyncFire("cg-data-request", options, document);
             },
             isDataAware:function(){

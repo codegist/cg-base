@@ -1,13 +1,6 @@
-<link href="../polymer/polymer.html" rel="import">
-<link href="loading-overlay.html" rel="import">
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="cg.html">
 
-<polymer-element name="cg-base" attributes="ownerId listensTo cgName dataContext">
-
-    <!--/*:host .disabled.core-transition.core-opened {*/-->
-    <!--/*background-color: black;*/-->
-    <!--/*opacity:0.6;*/-->
-    <!--/*}*/-->
-    <!--<core-overlay class="disabled" fit opened="true" autoCloseDisabled="true" sizingTarget="{{$.search}}"></core-overlay>-->
 <script>
     (function(){
         var id = 1;
@@ -17,29 +10,47 @@
             }
         };
 
-        Polymer({
-            listensTo:["cg-application-event"],
+        var CGBaseBehaviorImpl = {
+            properties:{
+                _cgbaseId:{
+                    type:Number,
+                    value:0
+                },
+                cgName:String,
+                self:Object,
+                isAttached:Boolean,
+                listensTo:{
+                    type:Array,
+                    value:["cg-application-event"],
+                    observer:'listensToChanged',
+                },
+                globals:{
+                    value:GLOBALS,
+                    observer:'globalsChanged',
+                    readOnly:true
+                },
+                dataContext:{
+                    value:null,
+                    observer:'dataContextChanged'
+                },
+            },
+            _eventsHandlers:{},
             _handlerMap:{
                 "cg-application-event" : "onApplicationEvent",
                 "cg-application-error" : "onApplicationError",
                 "cg-application-link" : "onApplicationLink"
             },
-            _cgbaseId:0,
-            cgName:null,
-            self:null,
-            _eventsHandlers:{},
-            elementVisible:true,
-            globals:null,
-            dataContext:null,
-            isAttached:null,
-            _globalsContextObs:null,
+            observers: [
+                'globalsContextChanged(globals.context)'
+// TODO see Specifically, Polymer provides two API’s that allow such changes to be notified to the system:
+// TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
+            ],
             created:function(){
                 this._cgbaseId = id++;
                 this.self = this;
-                this.globals = GLOBALS;
-                this._globalsContextObs = new PathObserver(GLOBALS, "context");
-                this._globalsContextObs.open(function(){this.contextChanged()}.bind(this));
-                this.listensToChanged();
+            },
+            ready:function(){
+                this.async(this.contextChanged);
             },
             attached:function(){
                 this.isAttached = true;
@@ -51,7 +62,7 @@
             listensToChanged:function(){
                 for(var key in this._eventsHandlers){
                     var e = this._eventsHandlers[key];
-                    Polymer.removeEventListener(e.node, e.event, e.handler);
+                    e.node.removeEventListener(e.type, e.handler);
                 }
                 this._eventsHandlers = {};
                 for(var i = 0; i < this.listensTo.length; i++){
@@ -67,15 +78,12 @@
                     console.log("["+this.constructor.name+"] receiving "+event+"[type:"+e.detail.type+"]");
                     callback.call(this, e.detail.type, e.detail, e);
                 }.bind(this);
-                Polymer.addEventListener(document, event, handler);
+                document.addEventListener(event, handler);
                 this._eventsHandlers[event] = {
                     handler:handler,
-                    event:event,
+                    type:event,
                     node:document
                 };
-            },
-            domReady:function(){
-                this.async(this.contextChanged);
             },
             fireApplicationLink:function(type, params, source){
                 this._fireApplication("cg-application-link", type, params, source);
@@ -88,23 +96,21 @@
             },
             _fireApplication:function(eventType, type, params, source){
                 console.log("["+this.constructor.name+"] fireApplication(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
-                this.asyncFire(eventType, {
-                    type:type,
-                    params:params,
-                    source:source || this
-                }, document);
+                this.asyncFire(eventType, {type:type, params:params, source:source || this}, {node:document});
             },
             fireDataRequest:function(options){
-//                var loading = document.createElement("loading-overlay");
-//                loading.setAttribute("sizingTarget", "{{self}}");
-//                this.appendChild(loading);
                 options.type = (options.typePrefix !== false ? (this.cgName || this.constructor.name) + "/" : "") + options.type;
                 options.el = this;
                 options.source = options.source || this;
                 options.params = options.params || {};
                 options.params.context = this.dataContext || {};
                 console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 100)+")");
-                this.asyncFire("cg-data-request", options, document);
+                this.asyncFire("cg-data-request", options, {node:document});
+            },
+            asyncFire:function(type, detail, options){
+                this.async(function(){
+                    this.fire(type, detail, options);
+                });
             },
             isDataAware:function(){
                 return this.globals.dataAware;
@@ -113,7 +119,10 @@
                 this.reload();
             },
             reload:function(){},
-            contextChanged:function(){
+            globalsContextChanged:function(){
+                this.contextChanged();
+            },
+            contextChanged:function(){ // TODO REFACTOR
             },
             globalsChanged:function(){
             },
@@ -129,7 +138,9 @@
                 };
                 this.addEventListener(event, listener, false);
             },
-        });
+        };
+
+        CG.BaseBehavior = [CGBaseBehaviorImpl];
     })();
 </script>
 </polymer-element>

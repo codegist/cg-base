@@ -1,5 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="cg.html">
+<link rel="import" href="../cg-utils/cg-utils.html">
 
 <script>
     (function(){
@@ -48,6 +48,7 @@
             created:function(){
                 this._cgbaseId = id++;
                 this.self = this;
+                console.log("["+this.constructor.name+"] created (id:"+this._cgbaseId+")");
             },
             ready:function(){
                 this.async(this.contextChanged);
@@ -95,7 +96,7 @@
                 this._fireApplication("cg-application-event", type, params, source);
             },
             _fireApplication:function(eventType, type, params, source){
-                console.log("["+this.constructor.name+"] fireApplication(type:"+type+", params:"+CGUtils.json.stringify(params, true, 40)+")");
+                console.log("["+this.constructor.name+"] fireApplication(type:"+type+", params:"+CG.Utils.json.stringify(params, true, 40)+")");
                 this.asyncFire(eventType, {type:type, params:params, source:source || this}, {node:document});
             },
             fireDataRequest:function(options){
@@ -104,7 +105,7 @@
                 options.source = options.source || this;
                 options.params = options.params || {};
                 options.params.context = this.dataContext || {};
-                console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CGUtils.json.stringify(options.params, true, 100)+")");
+                console.log("["+this.constructor.name+"] fireDataRequest(type:"+options.type+", params:"+CG.Utils.json.stringify(options.params, true, 100)+")");
                 this.asyncFire("cg-data-request", options, {node:document});
             },
             asyncFire:function(type, detail, options){

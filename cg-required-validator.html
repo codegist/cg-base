@@ -1,0 +1,25 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-validator-behavior/iron-validator-behavior.html">
+
+<script>
+    Polymer({
+        is: 'cg-required-validator',
+        properties: {
+            required: {
+                type: Boolean
+            },
+            validatorType:{
+                computed:'_validatorType(required)'
+            }
+        },
+        behaviors: [
+            Polymer.IronValidatorBehavior
+        ],
+        _validatorType:function(required){
+            return required ? "validator-required" : "validator";
+        },
+        validate: function (value) {
+            return this.required ? !value === false : true;
+        }
+    });
+</script>

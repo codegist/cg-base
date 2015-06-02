@@ -14,10 +14,12 @@
             properties:{
                 _cgbaseId:{
                     type:Number,
-                    value:0
                 },
                 cgName:String,
-                self:Object,
+                self:{
+                    type:Object,
+                    value:function(){return this;}
+                },
                 isAttached:Boolean,
                 listensTo:{
                     type:Array,
@@ -46,7 +48,6 @@
             ],
             created:function(){
                 this._cgbaseId = id++;
-                this.self = this;
                 console.log("["+this.constructor.name+"] created (id:"+this._cgbaseId+")");
             },
             ready:function(){

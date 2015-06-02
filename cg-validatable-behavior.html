@@ -1,0 +1,29 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-meta/iron-meta.html">
+<link rel="import" href="../iron-validatable-behavior/iron-validatable-behavior.html">
+<link rel="import" href="../cg-utils/cg.html">
+
+<script>
+    CG.ValidatableBehaviorImpl = {
+        properties: {
+            validator: {
+                type: String
+            },
+            invalid: {
+                reflectToAttribute: true,
+                type: Boolean,
+                value: false
+            },
+            _validatorMeta: {
+                type: Object
+            },
+            validatorType:{
+                computed:'_validatorType(required)'
+            }
+        },
+        _validatorType:function(required){
+            return required ? "validator-required" : "validator";
+        },
+    };
+    CG.ValidatableBehavior = [Polymer.IronValidatableBehavior, CG.ValidatableBehaviorImpl];
+</script>

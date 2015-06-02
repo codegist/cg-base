@@ -30,7 +30,6 @@
                     readOnly:true
                 },
                 dataContext:{
-                    value:null,
                     observer:'dataContextChanged'
                 },
             },
@@ -138,6 +137,13 @@
                     this.removeEventListener(event, listener, false);
                 };
                 this.addEventListener(event, listener, false);
+            },
+            doWhenConditionIsMet:function(callback, condition, waitTime){
+                if(!condition.call(this)) {
+                    this.debounce(this.constructor.name + "-waiting-for-condition", this.doWhenConditionIsMet.bind(this, callback, condition, waitTime), waitTime || 20)
+                }else{
+                    callback.call(this);
+                }
             },
         };
 

@@ -6,8 +6,7 @@
         var id = 1;
         var GLOBALS = {
             ignoreVisibilityOnDataRequest:[],
-            context:{
-            }
+            context:undefined
         };
 
         var CGBaseBehaviorImpl = {
@@ -42,7 +41,7 @@
                 "cg-application-link" : "onApplicationLink"
             },
             observers: [
-                'globalsContextChanged(globals.context)'
+                'globalsContextChanged(globals.context.*)'
 // TODO see Specifically, Polymer provides two API’s that allow such changes to be notified to the system:
 // TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
             ],
@@ -120,10 +119,11 @@
                 this.reload();
             },
             reload:function(){},
-            globalsContextChanged:function(){
-                this.contextChanged();
+            globalsContextChanged:function(newValue, oldValue){
+                if(!newValue || !newValue.value) return;
+                this.contextChanged(newValue, oldValue);
             },
-            contextChanged:function(){ // TODO REFACTOR
+            contextChanged:function(newValue, oldValue){ // TODO REFACTOR
             },
             globalsChanged:function(){
             },

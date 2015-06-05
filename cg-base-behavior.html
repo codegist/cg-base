@@ -48,7 +48,7 @@
             ],
             created:function(){
                 this._cgbaseId = id++;
-                console.log("["+this.constructor.name+"] created (id:"+this._cgbaseId+")");
+                //console.log("["+this.constructor.name+"] created (id:"+this._cgbaseId+")");
             },
             ready:function(){
                 this.async(this.contextChanged);
@@ -58,7 +58,7 @@
             },
             detached:function(){
                 this.isAttached = false;
-                console.log("["+this.constructor.name+"] detached");
+                //console.log("["+this.constructor.name+"] detached");
             },
             listensToChanged:function(){
                 for(var key in this._eventsHandlers){

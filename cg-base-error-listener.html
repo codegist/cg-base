@@ -1,35 +1,41 @@
 <link href="../polymer/polymer.html" rel="import">
-<link href="cg-base.html" rel="import">
+<link href="cg-base-behavior.html" rel="import">
 
-<polymer-element name="cg-base-error-listener" extends="cg-base" attributes="heading typeFilter genericText detailsLabel closeLabel catchGlobal">
-<template>
-
-</template>
 <script>
-  Polymer('cg-base-error-listener', {
-      listensTo:["cg-application-error"],
-      errors:null,
-      catchGlobal:true,
-      typeFilter:null,
-      created:function(){
-          this.super();
-          this.errors = [];
-          this.typeFilter = [];
-          window.onerror = function(errorMsg, url, lineNumber) {
-              if (!this.catchGlobal) return;
-              return this.fireApplicationError("unknown-error", {error:errorMsg, url:url, lineNumber:lineNumber});
-          }.bind(this);
-      },
-      _stripSource : function(k,v){
-          return k == "source" ? "source":v;
-      },
-      onApplicationError:function(type, error){
-          console.log("[cg-base-error-listener] received error " + JSON.stringify(error, this._stripSource));
-          if(this.typeFilter.length == 0 || this.typeFilter.indexOf(type) != -1) {
-              this.errors.splice(0, 0, error);
-          }
-      },
-  });
-
+    CG.BaseErrorListenerBehaviorImpl = {
+        properties: {
+            listensTo: {
+                type: Array,
+                value: ["cg-application-error"]
+            },
+            errors: {
+                type: Array,
+                value: []
+            },
+            catchGlobal: {
+                type: Boolean,
+                value: true
+            },
+            typeFilter: {
+                type: Array,
+                value: []
+            },
+        },
+        ready: function () {
+            window.onerror = function (errorMsg, url, lineNumber) {
+                if (!this.catchGlobal) return;
+                return this.fireApplicationError("unknown-error", {error: errorMsg, url: url, lineNumber: lineNumber});
+            }.bind(this);
+        },
+        _stripSource: function (k, v) {
+            return k == "source" ? "source" : v;
+        },
+        onApplicationError: function (type, error) {
+            console.log("[cg-base-error-listener] received error " + JSON.stringify(error, this._stripSource));
+            if (this.typeFilter.length == 0 || this.typeFilter.indexOf(type) != -1) {
+                this.errors.splice(0, 0, error);
+            }
+        },
+    };
+    CG.BaseErrorListenerBehavior = [CG.BaseBehavior, CG.BaseErrorListenerBehaviorImpl]
 </script>
-</polymer-element>

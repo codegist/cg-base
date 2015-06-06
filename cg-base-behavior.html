@@ -4,7 +4,6 @@
 
 <script>
     (function(){
-        var id = 1;
         var GLOBALS = {
             ignoreVisibilityOnDataRequest:[],
             context:undefined
@@ -13,7 +12,8 @@
         var CGBaseBehaviorImpl = {
             properties:{
                 _cgbaseId:{
-                    type:Number,
+                    type:String,
+                    readOnly:true
                 },
                 cgName:String,
                 self:{
@@ -46,12 +46,9 @@
 // TODO see Specifically, Polymer provides two API’s that allow such changes to be notified to the system:
 // TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
             ],
-            created:function(){
-                this._cgbaseId = id++;
-                //console.log("["+this.constructor.name+"] created (id:"+this._cgbaseId+")");
-            },
             ready:function(){
-                this.async(this.contextChanged);
+                this._set_cgbaseId(CG.Utils.Randoms.id());
+                //console.log("["+this.constructor.name+"] ready " + this._cgbaseId);
             },
             attached:function(){
                 this.isAttached = true;

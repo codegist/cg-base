@@ -62,7 +62,6 @@
                 //console.log("["+this.constructor.name+"] detached");
             },
             listensToChanged:function(){
-                console.log("listensToChanged: " + this.constructor.name + " - " + this.listensTo)
                 for(var key in this._eventsHandlers){
                     var e = this._eventsHandlers[key];
                     e.node.removeEventListener(e.type, e.handler);

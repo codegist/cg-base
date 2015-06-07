@@ -32,7 +32,10 @@
                     readOnly:true
                 },
                 dataContext:{
-                    observer:'dataContextChanged'
+                    type:Object,
+//                    value:{},
+                    observer:'dataContextChanged',
+                    readOnly:true
                 },
             },
             _eventsHandlers:{},
@@ -42,7 +45,8 @@
                 "cg-application-link" : "onApplicationLink"
             },
             observers: [
-                'globalsContextChanged(globals.context.*)'
+                'globalsContextChanged(globals.context.*)',
+//                'dataContextChanged(dataContext.*)'
 // TODO see Specifically, Polymer provides two API’s that allow such changes to be notified to the system:
 // TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
             ],
@@ -58,6 +62,7 @@
                 //console.log("["+this.constructor.name+"] detached");
             },
             listensToChanged:function(){
+                console.log("listensToChanged: " + this.constructor.name + " - " + this.listensTo)
                 for(var key in this._eventsHandlers){
                     var e = this._eventsHandlers[key];
                     e.node.removeEventListener(e.type, e.handler);
@@ -113,7 +118,8 @@
             isDataAware:function(){
                 return this.globals.dataAware;
             },
-            dataContextChanged:function(){
+            dataContextChanged:function(newValue, oldValue){
+                if(!newValue || !newValue.value) return;
                 this.reload();
             },
             reload:function(){},

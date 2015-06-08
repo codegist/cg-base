@@ -12,9 +12,9 @@
                 type: Array,
                 value: []
             },
-            catchGlobal: {
+            noCatchGlobal: {
                 type: Boolean,
-                value: true
+                value: false
             },
             typeFilter: {
                 type: Array,
@@ -23,7 +23,7 @@
         },
         ready: function () {
             window.onerror = function (errorMsg, url, lineNumber) {
-                if (!this.catchGlobal) return;
+                if (this.noCatchGlobal) return;
                 return this.fireApplicationError("unknown-error", {error: errorMsg, url: url, lineNumber: lineNumber});
             }.bind(this);
         },

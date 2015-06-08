@@ -6,7 +6,8 @@
         is: 'cg-required-validator',
         properties: {
             required: {
-                type: Boolean
+                type: Boolean,
+                value:false
             },
             validatorType:{
                 computed:'_validatorType(required)'

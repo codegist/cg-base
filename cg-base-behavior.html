@@ -51,7 +51,7 @@
 // TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
             ],
             ready:function(){
-                this._set_cgbaseId(CG.Utils.Randoms.id());
+                this._set_cgbaseId(CG.Utils.Generators.id());
                 //console.log("["+this.constructor.name+"] ready " + this._cgbaseId);
             },
             attached:function(){

@@ -38,7 +38,7 @@
             _handlerMap:{
                 "cg-application-event" : "onApplicationEvent",
                 "cg-application-error" : "onApplicationError",
-                "cg-application-link" : "onApplicationLink"
+                "cg-application-link" : "onApplicationLink",
             },
             observers: [
                 'globalsContextChanged(globals.context.*)',
@@ -46,6 +46,11 @@
 // TODO see Specifically, Polymer provides two API’s that allow such changes to be notified to the system:
 // TODO see notifyPath(path, value) and set(path, value), where path is a string identifying the path (relative to the host element).
             ],
+            created:function(){
+                this.async(function(){
+                    this._listensTo("cg-global", this._onGlobalChangeEvent, false);
+                });
+            },
             ready:function(){
                 this._set_cgbaseId(CG.Utils.Generators.id());
                 //console.log("["+this.constructor.name+"] ready " + this._cgbaseId);
@@ -71,17 +76,17 @@
                     this._listensTo(this.listensTo[i], handler);
                 }
             },
-            _listensTo:function(event, callback){
+            _listensTo:function(event, callback, register){
                 var handler = function(e){
                     console.log("["+this.constructor.name+"] receiving "+event+"[type:"+e.detail.type+"]");
                     callback.call(this, e.detail.type, e.detail, e);
                 }.bind(this);
                 document.addEventListener(event, handler);
-                this._eventsHandlers[event] = {
+                register !==false && (this._eventsHandlers[event] = {
                     handler:handler,
                     type:event,
                     node:document
-                };
+                });
             },
             fireApplicationLink:function(type, params, source){
                 this._fireApplication("cg-application-link", type, params, source);
@@ -124,8 +129,27 @@
             },
             contextChanged:function(newValue, oldValue){ // TODO REFACTOR
             },
-            globalsChanged:function(){
+            globalsChanged:function(change){
+//                console.log("["+this.constructor.name+"] ######################## " + CG.Utils.Json.stringify(change, true));
+//                this.notifyPath(change.path, change.value);
             },
+            setGlobal:function(path, value){
+                path = "globals." + path;
+                this.set(path, value);
+                this._fireApplication("cg-global", "changed", {
+                    path:path,
+                    value:value
+                }, this);
+            },
+            _onGlobalChangeEvent:function(type, event, e){
+                if(event.source == this) return;
+                //console.log("["+this.constructor.name+"] onGlobalChangeEvent " + event.params.path + "=" + CG.Utils.Json.stringify(event.params.value, true, 100));
+                this.notifyPath(event.params.path, event.params.value);
+                var path = event.params.path;
+                path = path.substring("globals.".length);
+                this.onGlobalChangeEvent(path, event.params.value);
+            },
+            onGlobalChangeEvent:function(path, value){},
             onApplicationLink:function(type, event, e){},
             onApplicationEvent:function(type, event, e){},
             onApplicationError:function(type, event, e){},

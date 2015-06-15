@@ -22,7 +22,7 @@
                     value:["cg-application-event"],
                     observer:'listensToChanged',
                 },
-                globals:{
+                globals:{ // TODO move to CG.GlobalAwareBehavior
                     value:GLOBALS,
                     observer:'globalsChanged',
                     readOnly:true
@@ -36,7 +36,7 @@
             },
             _eventsHandlers:{},
             _handlerMap:{
-                "cg-application-event" : "onApplicationEvent",
+                "cg-application-event" : "onApplicationEvent", // TODO create one behavior for each event, eg: CG.ApplicationEventAwareBehavior, CG.ApplicationErrorAwareBehavior, CG.ApplicationLinkAwareBehavior etc..
                 "cg-application-error" : "onApplicationError",
                 "cg-application-link" : "onApplicationLink",
             },
@@ -133,17 +133,25 @@
 //                console.log("["+this.constructor.name+"] ######################## " + CG.Utils.Json.stringify(change, true));
 //                this.notifyPath(change.path, change.value);
             },
-            setGlobal:function(path, value){
+            setGlobal:function(path, value, notifySubProps){
                 path = "globals." + path;
                 this.set(path, value);
                 this._fireApplication("cg-global", "changed", {
                     path:path,
                     value:value
                 }, this);
+//                if(notifySubProps) {
+//                    notifySubProps.forEach(function(prop){
+//                        this._fireApplication("cg-global", "changed", {
+//                            path:path + "." + prop,
+//                            value:value[prop]
+//                        }, this);
+//                    }.bind(this));
+//                }
             },
             _onGlobalChangeEvent:function(type, event, e){
-                if(event.source == this) return;
-                //console.log("["+this.constructor.name+"] onGlobalChangeEvent " + event.params.path + "=" + CG.Utils.Json.stringify(event.params.value, true, 100));
+                //if(event.source == this) return;
+                console.log("["+this.constructor.name+"] onGlobalChangeEvent " + event.params.path + "=" + CG.Utils.Json.stringify(event.params.value, true, 100));
                 this.notifyPath(event.params.path, event.params.value);
                 var path = event.params.path;
                 path = path.substring("globals.".length);

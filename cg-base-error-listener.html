@@ -18,7 +18,7 @@
             return k == "source" ? "source" : v;
         },
         onApplicationError: function (type, error) {
-            console.log(this.toString(), "received error " + JSON.stringify(error, this._stripSource));
+            console.log(this.toString(), "received error ", JSON.stringify(error, this._stripSource));
             if (this.typeFilter.length == 0 || this.typeFilter.indexOf(type) != -1) {
                 this.splice("errors", 0, 0, error);
             }

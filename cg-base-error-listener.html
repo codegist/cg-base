@@ -6,14 +6,16 @@
         properties: {
             errors: {
                 type: Array,
-                value: [],
-                notify:true,
+                value: []
             },
             typeFilter: {
                 type: Array,
                 value: []
             },
         },
+        observers:[
+            "errorsChanged(errors.splices)"
+        ],
         _stripSource: function (k, v) {
             return k == "source" ? "source" : v;
         },
@@ -24,5 +26,5 @@
             }
         },
     };
-    CG.BaseErrorListenerBehavior = [CG.BaseErrorListenerBehaviorImpl, CG.ApplicationErrorListenerBehavior]
+    CG.BaseErrorListenerBehavior = [CG.ApplicationErrorListenerBehavior, CG.BaseErrorListenerBehaviorImpl]
 </script>
